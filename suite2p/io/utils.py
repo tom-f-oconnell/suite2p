@@ -66,19 +66,32 @@ def list_h5(ops):
     fs.extend(fs2)
     return fs
 
-def list_files(froot, look_one_level_down, exts):
+def list_files(froot, look_one_level_down, exts, exclude_filenames=None):
     """ get list of files with exts in folder froot + one level down maybe
+
+    Args:
+        exclude_filenames (None | iterable of str): optional iterable of file basenames
+            to exclude (basename means the string only has the filename, not any
+            containing directories).
     """
     fs = []
     for e in exts:
         lpath = os.path.join(froot, e)
-        fs.extend(glob.glob(lpath))
+
+        ext_fs = glob.glob(lpath)
+        if exclude_filenames:
+            ext_fs = [x for x in ext_fs if os.path.split(x)[1] not in exclude_filenames]
+
+        fs.extend(ext_fs)
+
     fs = natsorted(set(fs))
+
     if len(fs) > 0:
         first_tiffs = np.zeros((len(fs),), 'bool')
         first_tiffs[0] = True
     else:
         first_tiffs = np.zeros(0, 'bool')
+
     lfs = len(fs)
     if look_one_level_down:
         fdir = natsorted(glob.glob(os.path.join(froot, "*/")))
@@ -86,13 +99,22 @@ def list_files(froot, look_one_level_down, exts):
             fsnew = []
             for e in exts:
                 lpath = os.path.join(folder_down, e)
-                fsnew.extend(glob.glob(lpath))
+
+                ext_fs = glob.glob(lpath)
+                if exclude_filenames:
+                    ext_fs = [x for x in ext_fs
+                        if os.path.split(x)[1] not in exclude_filenames
+                    ]
+
+                fsnew.extend(ext_fs)
+
             fsnew = natsorted(set(fsnew))
             if len(fsnew) > 0:
                 fs.extend(fsnew)
                 first_tiffs = np.append(first_tiffs, np.zeros((len(fsnew),), 'bool'))
                 first_tiffs[lfs] = True
                 lfs = len(fs)
+
     return fs, first_tiffs
 
 def get_h5_list(ops):
@@ -145,20 +167,25 @@ def get_tif_list(ops):
                 fold_list = ops['data_path']
         else:
             fold_list = froot
+
         fsall = []
         nfs = 0
         first_tiffs = []
         for k,fld in enumerate(fold_list):
             fs, ftiffs = list_files(fld, ops['look_one_level_down'],
-                                    ["*.tif", "*.tiff", "*.TIF", "*.TIFF"])
+                                    ["*.tif", "*.tiff", "*.TIF", "*.TIFF"],
+                                    exclude_filenames=('ChanA_Preview.tif',))
+
             fsall.extend(fs)
             first_tiffs.extend(list(ftiffs))
+
         if len(fsall)==0:
             print('Could not find any tiffs')
             raise Exception('no tiffs')
         else:
             ops['first_tiffs'] = np.array(first_tiffs).astype('bool')
             print('** Found %d tifs - converting to binary **'%(len(fsall)))
+
     return fsall, ops
 
 def find_files_open_binaries(ops1, ish5=False):
@@ -179,7 +206,6 @@ def find_files_open_binaries(ops1, ish5=False):
     reg_file = []
     reg_file_chan2=[]
 
-
     for ops in ops1:
         nchannels = ops['nchannels']
         if 'keep_movie_raw' in ops and ops['keep_movie_raw']:
@@ -195,9 +221,11 @@ def find_files_open_binaries(ops1, ish5=False):
             input_format = ops['input_format']
         else:
             input_format = 'tif'
+
     if ish5:
         input_format = 'h5'
     print(input_format)
+
     if input_format == 'h5':
         if len(ops1[0]['data_path'])>0:
             fs, ops2 = get_h5_list(ops1[0])
@@ -211,19 +239,23 @@ def find_files_open_binaries(ops1, ish5=False):
                 print(fs)
             else:
                 fs = [ops1[0]['h5py']]
+
     elif input_format == 'sbx':
         # find sbx
         fs, ops2 = get_sbx_list(ops1[0])
         print('Scanbox files:')
         print('\n'.join(fs))
+
     else:
         # find tiffs
         fs, ops2 = get_tif_list(ops1[0])
         for ops in ops1:
             ops['first_tiffs'] = ops2['first_tiffs']
             ops['frames_per_folder'] = np.zeros((ops2['first_tiffs'].sum(),), np.int32)
+
     for ops in ops1:
         ops['filelist'] = fs
+
     return ops1, fs, reg_file, reg_file_chan2
 
 

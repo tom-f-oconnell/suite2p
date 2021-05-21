@@ -122,26 +122,31 @@ def tiff_to_binary(ops):
     ops1, fs, reg_file, reg_file_chan2 = utils.find_files_open_binaries(ops1, False)
     ops = ops1[0]
     # try tiff readers
-    use_sktiff = True if ops['force_sktiff'] else use_sktiff_reader(fs[0], batch_size=ops1[0].get('batch_size'))
-    
+    use_sktiff = (True if ops['force_sktiff'] else
+        use_sktiff_reader(fs[0], batch_size=ops1[0].get('batch_size'))
+    )
+
     batch_size = ops['batch_size']
-    batch_size = nplanes*nchannels*math.ceil(batch_size/(nplanes*nchannels))
+    batch_size = nplanes * nchannels * math.ceil(batch_size / (nplanes * nchannels))
 
     # loop over all tiffs
     which_folder = -1
-    ntotal=0
+    ntotal = 0
     for ik, file in enumerate(fs):
         # open tiff
         tif, Ltif = open_tiff(file, use_sktiff)
-        # keep track of the plane identity of the first frame (channel identity is assumed always 0)
+
+        # keep track of the plane identity of the first frame (channel identity is
+        # assumed always 0)
         if ops['first_tiffs'][ik]:
             which_folder += 1
             iplane = 0
-        ix = 0
 
+        ix = 0
         while 1:
             if ix >= Ltif:
                 break
+
             nfr = min(Ltif - ix, batch_size)
             # tiff reading
             if use_sktiff:
@@ -162,9 +167,13 @@ def tiff_to_binary(ops):
                 im = (im // 2).astype(np.int16)
             elif im.dtype.type != np.int16:
                 im = im.astype(np.int16)
-            
+
+            # TODO shouldn't this be an error? when is this caused?
             if im.shape[0] > nfr:
+                # Seems to suggest Z should be handled as part of first element of
+                # shape...
                 im = im[:nfr, :, :]
+
             nframes = im.shape[0]
             for j in range(0,nplanes):
                 if ik==0 and ix==0:
@@ -173,11 +182,13 @@ def tiff_to_binary(ops):
                     ops1[j]['meanImg'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
                     if nchannels>1:
                         ops1[j]['meanImg_chan2'] = np.zeros((im.shape[1], im.shape[2]), np.float32)
+
                 i0 = nchannels * ((iplane+j)%nplanes)
                 if nchannels>1:
                     nfunc = ops['functional_chan']-1
                 else:
                     nfunc = 0
+
                 im2write = im[int(i0)+nfunc:nframes:nplanes*nchannels]
 
                 reg_file[j].write(bytearray(im2write))
@@ -186,18 +197,21 @@ def tiff_to_binary(ops):
                 ops1[j]['frames_per_file'][ik] += im2write.shape[0]
                 ops1[j]['frames_per_folder'][which_folder] += im2write.shape[0]
                 #print(ops1[j]['frames_per_folder'][which_folder])
+
                 if nchannels>1:
                     im2write = im[int(i0)+1-nfunc:nframes:nplanes*nchannels]
                     reg_file_chan2[j].write(bytearray(im2write))
                     ops1[j]['meanImg_chan2'] += im2write.mean(axis=0)
 
 
-            iplane = (iplane-nframes/nchannels)%nplanes
-            ix+=nframes
-            ntotal+=nframes
-            if ntotal%(batch_size*4)==0:
-                print('%d frames of binary, time %0.2f sec.'%(ntotal,time.time()-t0))
+            iplane = (iplane - nframes / nchannels) % nplanes
+            ix += nframes
+            ntotal += nframes
+            if ntotal % (batch_size * 4) == 0:
+                print('%d frames of binary, time %0.2f sec.' % (ntotal, time.time()-t0))
+
         gc.collect()
+
     # write ops files
     do_registration = ops['do_registration']
     for ops in ops1:
@@ -205,14 +219,17 @@ def tiff_to_binary(ops):
         ops['yrange'] = np.array([0,ops['Ly']])
         ops['xrange'] = np.array([0,ops['Lx']])
         ops['meanImg'] /= ops['nframes']
-        if nchannels>1:
+        if nchannels > 1:
             ops['meanImg_chan2'] /= ops['nframes']
+
         np.save(ops['ops_path'], ops)
+
     # close all binary files and write ops files
     for j in range(0,nplanes):
         reg_file[j].close()
-        if nchannels>1:
+        if nchannels > 1:
             reg_file_chan2[j].close()
+
     return ops1[0]
 
 def mesoscan_to_binary(ops):
