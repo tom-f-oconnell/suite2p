@@ -20,6 +20,11 @@ def add_args(parser: argparse.ArgumentParser):
             v['nargs'] = '+'
             v['type'] = type(v['default'][0])
         parser.add_argument('--'+k, **v)
+
+    parser.add_argument('--statfile', type=str, help='Path to stat.npy file, '
+        'containing processed outputs of prior suite2p run, to load.'
+    )
+
     return parser
 
 
@@ -71,7 +76,7 @@ def main():
         run_s2p(ops, db)
     else:
         from suite2p import gui
-        gui.run()
+        gui.run(statfile=args.statfile)
 
 
 if __name__ == '__main__':

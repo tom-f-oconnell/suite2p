@@ -6,7 +6,7 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QGridLayout, QCheckBox, QLineEdit, QLabel
 
 from . import menus, io, merge, views, buttons, classgui, traces, graphics, masks
-from .. import run_s2p, default_ops
+from .. import default_ops
 
 
 class MainWindow(QMainWindow):
@@ -705,8 +705,7 @@ def run(statfile=None):
     app = QApplication(sys.argv)
     import suite2p
     s2ppath = os.path.dirname(os.path.realpath(suite2p.__file__))
-    icon_path = os.path.join(s2ppath, "logo","logo.png"
-    )
+    icon_path = os.path.join(s2ppath, "logo", "logo.png")
     app_icon = QtGui.QIcon()
     app_icon.addFile(icon_path, QtCore.QSize(16, 16))
     app_icon.addFile(icon_path, QtCore.QSize(24, 24))
