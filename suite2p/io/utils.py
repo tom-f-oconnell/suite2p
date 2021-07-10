@@ -168,13 +168,15 @@ def get_tif_list(ops):
         else:
             fold_list = froot
 
+        exclude_filenames = ('ChanA_Preview.tif', 'ChanB_Preview.tif')
+
         fsall = []
         nfs = 0
         first_tiffs = []
         for k,fld in enumerate(fold_list):
             fs, ftiffs = list_files(fld, ops['look_one_level_down'],
                                     ["*.tif", "*.tiff", "*.TIF", "*.TIFF"],
-                                    exclude_filenames=('ChanA_Preview.tif',))
+                                    exclude_filenames=exclude_filenames)
 
             fsall.extend(fs)
             first_tiffs.extend(list(ftiffs))
