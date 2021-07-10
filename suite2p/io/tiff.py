@@ -6,12 +6,12 @@ import os
 import time
 from typing import Union, Tuple, Optional
 
-
 import numpy as np
 from ScanImageTiffReader import ScanImageTiffReader
 from tifffile import imread, TiffFile, TiffWriter
 
 from . import utils
+from .. import extraction
 
 
 def generate_tiff_filename(functional_chan: int, align_by_chan: int, save_path: str, k: int, ichan: bool) -> str:
@@ -219,6 +219,14 @@ def tiff_to_binary(ops):
         ops['yrange'] = np.array([0,ops['Ly']])
         ops['xrange'] = np.array([0,ops['Lx']])
         ops['meanImg'] /= ops['nframes']
+
+        # Since some things require 'meanImgE' but it's currently only set in
+        # registration and one other place that seems to either only run conditionally
+        # or after some things use it.
+        # TODO check whether two version of this duplicated function have equivalent
+        # implementations
+        ops = extraction.enhanced_mean_image(ops)
+
         if nchannels > 1:
             ops['meanImg_chan2'] /= ops['nframes']
 
