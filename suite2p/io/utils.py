@@ -168,7 +168,7 @@ def get_tif_list(ops):
         else:
             fold_list = froot
 
-        exclude_filenames = ('ChanA_Preview.tif', 'ChanB_Preview.tif')
+        exclude_filenames = ops.get('exclude_filenames', tuple())
 
         fsall = []
         nfs = 0
