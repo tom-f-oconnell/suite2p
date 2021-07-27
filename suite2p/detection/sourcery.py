@@ -301,15 +301,6 @@ def getVmap(Ucell, sig):
     return log_variances.astype('float64'), us
 
 
-def sub2ind(array_shape, rows, cols):
-    return rows * array_shape[1] + cols
-
-
-def minDistance(inputs):
-    y1, x1, y2, x2 = inputs
-    ds = (y1 - np.expand_dims(y2, axis=1))**2 + (x1 - np.expand_dims(x2, axis=1))**2
-    return np.amin(ds)**.5
-
 def get_connected(Ly, Lx, stat):
     '''grow i0 until it cannot grow any more
     '''
