@@ -9,7 +9,7 @@ from ..detection.sparsedetect import extendROI
 def create_masks(ops: Dict[str, Any], stats: List[Dict[str, Any]]):
     """ create cell and neuropil masks """
 
-    cell_pix = create_cell_pix(stats, Ly=ops['Ly'], Lx=ops['Lx'], 
+    cell_pix = create_cell_pix(stats, Ly=ops['Ly'], Lx=ops['Lx'],
                                lam_percentile=ops.get('lam_percentile', 50.0))
     cell_masks = [create_cell_mask(stat, Ly=ops['Ly'], Lx=ops['Lx'], allow_overlap=ops['allow_overlap']) for stat in stats]
     if ops.get('neuropil_extract', True):
@@ -25,14 +25,22 @@ def create_masks(ops: Dict[str, Any], stats: List[Dict[str, Any]]):
         neuropil_masks = None
     return cell_masks, neuropil_masks
 
-def create_cell_pix(stats: List[Dict[str, Any]], Ly: int, Lx: int, 
+# NOTE: type annotation on stats is violated. currently getting a numpy array.
+def create_cell_pix(stats: List[Dict[str, Any]], Ly: int, Lx: int,
                     lam_percentile: float = 50.0) -> np.ndarray:
+    # TODO what is 'stats'? (and why is Any type used in values?)
     """Returns Ly x Lx array of whether pixel contains a cell (1) or not (0).
-    
-    lam_percentile allows some pixels with low cell weights to be used, 
+
+    lam_percentile allows some pixels with low cell weights to be used,
     disable with lam_percentile=0.0
 
     """
+    # NOTE: I tried just changing the default value of this to 0 (in the RHS of the
+    # corresponding .get call in the fn above), but i think this option must be defined
+    # in the default options, because the default value i defined above wasn't being
+    # used
+    #lam_percentile = 0
+
     cell_pix = np.zeros((Ly, Lx))
     lammap = np.zeros((Ly, Lx))
     radii = np.zeros(len(stats))
@@ -42,10 +50,21 @@ def create_cell_pix(stats: List[Dict[str, Any]], Ly: int, Lx: int,
         xpix = stat['xpix']
         lam = stat['lam']
         lammap[ypix, xpix] = np.maximum(lammap[ypix, xpix], lam)
-    radius = np.median(radii)
+
     if lam_percentile > 0.0:
-        filt = percentile_filter(lammap, percentile=lam_percentile, size=int(radius*5))
-        cell_pix = ~np.logical_or(lammap < filt, lammap==0)
+        radius = np.median(radii)
+
+        if radius == 0:
+            cell_pix = lammap > 0.0
+        else:
+            # TODO if this fails w/ size=0, then shouldn't whatever is generating the
+            # `stats` input be prevented from giving zero values for radius? is it a bug
+            # that it's doing that? fix! (and should this code even run if size=1?  does
+            # that give correct/useful output?)
+            filt = percentile_filter(lammap, percentile=lam_percentile,
+                size=int(radius*5)
+            )
+            cell_pix = ~np.logical_or(lammap < filt, lammap == 0)
     else:
         cell_pix = lammap > 0.0
 
@@ -118,7 +137,7 @@ def create_neuropil_masks(ypixs, xpixs, cell_pix, inner_neuropil_radius, min_neu
                 ypix1, xpix1 = np.meshgrid(np.arange(max(0, ypix1.min() - extend_by), min(Ly, ypix1.max() + extend_by + 1), 1, int), 
                                            np.arange(max(0, xpix1.min() - extend_by), min(Lx, xpix1.max() + extend_by + 1), 1, int),
                                            indexing='ij')
-            
+
         ix = valid_pixels(cell_pix, ypix1, xpix1)
         neuropil_mask[ypix1[ix], xpix1[ix]] = True
         neuropil_mask[ypix, xpix] = False
