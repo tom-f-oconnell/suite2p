@@ -389,7 +389,6 @@ class RunWindow(QDialog):
         shutil.copy(os.path.join(self.ops_path, 'db%d.npy'%self.f), db_file)
         self.db = np.load(db_file, allow_pickle=True).item()
         print('Running suite2p!')
-        print('starting process')
         print(self.db)
         self.process.start('python -u -W ignore -m suite2p --ops %s --db %s'%(ops_file, db_file))
 
@@ -445,6 +444,7 @@ class RunWindow(QDialog):
 
     def save_default_ops(self):
         name = self.opsfile
+        # TODO why copy if we are overwriting reference to self.ops several times after?
         ops = self.ops.copy()
         self.ops = default_ops()
         self.save_text()

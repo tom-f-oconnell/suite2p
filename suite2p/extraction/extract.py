@@ -187,6 +187,7 @@ def create_masks_and_extract(ops, stat, cell_masks=None, neuropil_masks=None):
     return ops, stat, F, Fneu, F_chan2, Fneu_chan2
 
 
+# TODO why is this duplicated in ../registration/register.py? differences?
 def enhanced_mean_image(ops):
     """ computes enhanced mean image and adds it to ops
 

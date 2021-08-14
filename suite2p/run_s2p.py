@@ -7,7 +7,6 @@ from getpass import getpass
 import pathlib
 
 import numpy as np
-#from scipy.io import savemat
 
 from . import extraction, io, registration, detection, classification
 from .version import version
@@ -85,7 +84,7 @@ def default_ops():
         'norm_frames': True, # normalize frames when detecting shifts
         'force_refImg': False, # if True, use refImg stored in ops if available
         'pad_fft': False,
-        
+
         # non rigid registration settings
         'nonrigid': True,  # whether to use nonrigid registration
         'block_size': [128, 128],  # block size to register (** keep this a multiple of 2 **)
@@ -128,7 +127,7 @@ def default_ops():
         'use_builtin_classifier': False,  # whether or not to use built-in classifier for cell detection (overrides
                                          # classifier specified in classifier_path if set to True)
         'classifier_path': 0, # path to classifier
-        
+
         # channel 2 detection settings (stat[n]['chan2'], stat[n]['not_chan2'])
         'chan2_thres': 0.65,  # minimum for detection of brightness on channel 2
 
@@ -146,7 +145,7 @@ def run_plane(ops, ops_path=None, stat=None):
 
     Parameters
     -----------
-    ops : :obj:`dict` 
+    ops : :obj:`dict`
         specify 'reg_file', 'nchannels', 'tau', 'fs'
 
     ops_path: str
@@ -154,18 +153,18 @@ def run_plane(ops, ops_path=None, stat=None):
 
     Returns
     --------
-    ops : :obj:`dict` 
+    ops : :obj:`dict`
     """
     t1 = time.time()
-    
+
     ops = {**default_ops(), **ops}
     ops['date_proc'] = datetime.now()
     plane_times = {}
-    
+
     # for running on server or on moved files, specify ops_path
     if ops_path is not None:
         ops['save_path'] = os.path.split(ops_path)[0]
-        ops['ops_path'] = ops_path 
+        ops['ops_path'] = ops_path
         if len(ops['fast_disk'])==0 or ops['save_path']!=ops['fast_disk']:
             if os.path.exists(os.path.join(ops['save_path'], 'data.bin')):
                 ops['reg_file'] = os.path.join(ops['save_path'], 'data.bin')
@@ -193,7 +192,7 @@ def run_plane(ops, ops_path=None, stat=None):
         print("NOTE: not running registration, ops['do_registration']=0")
         print('binary path: %s'%ops['reg_file'])
         run_registration = False
-    
+
     if run_registration:
         ######### REGISTRATION #########
         t11=time.time()
@@ -221,7 +220,7 @@ def run_plane(ops, ops_path=None, stat=None):
             plane_times['registration_metrics'] = time.time()-t0
             print('Registration metrics, %0.2f sec.' % plane_times['registration_metrics'])
             np.save(os.path.join(ops['save_path'], 'ops.npy'), ops)
-    
+
     if ops.get('roidetect', True):
 
         # Select file for classification
@@ -302,7 +301,7 @@ def run_plane(ops, ops_path=None, stat=None):
             iscell = np.load(os.path.join(ops['save_path'], 'iscell.npy'))
             redcell = np.load(os.path.join(ops['save_path'], 'redcell.npy')) if ops['nchannels']==2 else []
             io.save_mat(ops, stat, F, Fneu, spks, iscell, redcell)
-            
+
     else:
         print("WARNING: skipping cell detection (ops['roidetect']=False)")
 
@@ -364,7 +363,7 @@ def run_s2p(ops={}, db={}, server={}):
             ops['save_path0'] = os.path.split(ops['nwb_file'])[0]
         else:
             ops['save_path0'] = ops['data_path'][0]
-    
+
     # check if there are binaries already made
     if 'save_folder' not in ops or len(ops['save_folder'])==0:
         ops['save_folder'] = 'suite2p'
@@ -379,7 +378,7 @@ def run_s2p(ops={}, db={}, server={}):
         files_found_flag = ops_found_flag and binaries_found_flag
     else:
         files_found_flag = False
-    
+
     if files_found_flag:
         print(f'FOUND BINARIES AND OPS IN {ops_paths}')
     # if not set up files and copy tiffs/h5py to binary
@@ -417,6 +416,10 @@ def run_s2p(ops={}, db={}, server={}):
                   time.time() - t0, ops0['nframes'], len(plane_folders)
             ))
 
+        # TODO isn't it an error that ops0 is never used after lines above? don't
+        # load functions set important things in there? (in particular 'meanImg')
+        # (the same data is just loaded again in the loop below it seems)
+
     if ops.get('multiplane_parallel'):
         if server:
             if 'fnc' in server.keys():
@@ -437,25 +440,25 @@ def run_s2p(ops={}, db={}, server={}):
                 print('>>>> skipping flyback PLANE', ipl)
                 continue
             op = np.load(ops_path, allow_pickle=True).item()
-            
+
             # make sure yrange and xrange are not overwritten
             for key in default_ops().keys():
                 if key not in ['data_path', 'save_path0', 'fast_disk', 'save_folder', 'subfolders']:
                     if key in ops:
                         op[key] = ops[key]
-            
+
             print('>>>>>>>>>>>>>>>>>>>>> PLANE %d <<<<<<<<<<<<<<<<<<<<<<'%ipl)
             op = run_plane(op, ops_path=ops_path)
-            print('Plane %d processed in %0.2f sec (can open in GUI).' % 
-                    (ipl, op['timing']['total_plane_runtime']))  
+            print('Plane %d processed in %0.2f sec (can open in GUI).' %
+                    (ipl, op['timing']['total_plane_runtime']))
         run_time = time.time()-t0
         print('total = %0.2f sec.' % run_time)
 
         #### COMBINE PLANES or FIELDS OF VIEW ####
-        if len(ops_paths)>1 and ops['combined'] and ops.get('roidetect', True):
+        if len(ops_paths) > 1 and ops['combined'] and ops.get('roidetect', True):
             print('Creating combined view')
             io.combined(save_folder, save=True)
-        
+
         # save to NWB
         if ops.get('save_NWB'):
             print('Saving in nwb format')

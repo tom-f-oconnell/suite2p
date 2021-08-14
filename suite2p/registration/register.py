@@ -481,6 +481,11 @@ def register_binary(ops: Dict[str, Any], refImg=None, raw=True):
     return ops
 
 
+# TODO why is this not seemingly conditionally set w/ different names as meanImg is
+# above? is it not used for anything real? is the appropriate input, given whatever this
+# "enhanced" image will be used for, guaranteed to be behind the 'meanImg' key
+# specifically? (conditionaly on stuff like align_by_chan)
+# TODO why is this duplicated in ../extraction/extract.py? differences?
 def enhanced_mean_image(ops):
     """ computes enhanced mean image and adds it to ops
 
