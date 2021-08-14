@@ -1,9 +1,11 @@
 import os
-from natsort import natsorted
 import numpy as np
 from datetime import datetime
 import scipy
 import pathlib
+
+from .utils import get_plane_ops_and_folder_lists
+
 
 def save_mat(ops, stat, F, Fneu, spks, iscell, redcell):
     ops_matlab = ops.copy()
@@ -34,6 +36,7 @@ def save_mat(ops, stat, F, Fneu, spks, iscell, redcell):
         }
     )
 
+
 def compute_dydx(ops1):
     ops = ops1[0].copy()
     dx = np.zeros(len(ops1), np.int64)
@@ -63,8 +66,9 @@ def compute_dydx(ops1):
             for j in range(nplanes):
                 for k in range(nrois):
                     dx[j*nrois + k] += (j%nX) * xmax
-                    dy[j*nrois + k] += int(j/nX) * ymax 
+                    dy[j*nrois + k] += int(j/nX) * ymax
     return dy, dx
+
 
 def combined(save_folder, save=True):
     """ Combines all the folders in save_folder into a single result file.
@@ -75,9 +79,10 @@ def combined(save_folder, save=True):
     Multi-roi recordings are arranged by their dx,dy physical localization.
     Multi-plane / multi-roi recordings are tiled after using dx,dy.
     """
-    plane_folders = natsorted([ f.path for f in os.scandir(save_folder) if f.is_dir() and f.name[:5]=='plane'])
-    ops1 = [np.load(os.path.join(f, 'ops.npy'), allow_pickle=True).item() for f in plane_folders]
+    ops1, plane_folders = get_plane_ops_and_folder_lists(save_folder)
+
     dy, dx = compute_dydx(ops1)
+
     Ly = np.array([ops['Ly'] for ops in ops1])
     Lx = np.array([ops['Lx'] for ops in ops1])
     LY = int(np.amax(dy + Ly))
@@ -171,7 +176,7 @@ def combined(save_folder, save=True):
             fpath = os.path.join(ops['save_path0'], 'suite2p', 'combined')
     else:
         fpath = os.path.join(save_folder, 'combined')
-    
+
     if not os.path.isdir(fpath):
         os.makedirs(fpath)
 
@@ -190,7 +195,7 @@ def combined(save_folder, save=True):
         np.save(os.path.join(fpath, 'spks.npy'), spks)
         np.save(os.path.join(fpath, 'ops.npy'), ops)
         np.save(os.path.join(fpath, 'stat.npy'), stat)
-        
+
         # save as matlab file
         if ops.get('save_mat'):
             matpath = os.path.join(ops['save_path'],'Fall.mat')

@@ -343,3 +343,21 @@ def get_suite2p_path(path: Path) -> Path:
     else:
         raise FileNotFoundError("The `suite2p` folder was not found in path")
     return new_path
+
+
+def get_plane_folders(save_folder):
+    """Returns a natsorted list of plane folders.
+    """
+    return natsorted([f.path for f in os.scandir(save_folder) if f.is_dir() and
+        f.name.startswith('plane')
+    ])
+
+
+def get_plane_ops_and_folder_lists(save_folder):
+    """Returns a list of a 'ops' dictionaries, one per plane folder, and plane folders.
+    """
+
+    plane_folders = get_plane_folders(save_folder)
+
+    ops1 = [np.load(os.path.join(f, 'ops.npy'), allow_pickle=True).item() for f in plane_folders]
+    return ops1, plane_folders
