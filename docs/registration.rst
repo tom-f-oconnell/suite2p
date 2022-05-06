@@ -17,12 +17,12 @@ took the average of a subset of frames. Because these frames are not
 motion-corrected, the average will not be crisp - there will be fuzzy
 edges because objects in the image have been moving around across the
 frames. Therefore, we do an initial iterative alignment procedure on a
-random subset of frames in order to get a crisp reference image for
-registration. We first take ``ops['nimg_init']`` random frames of the
+evenly-spaced subset of frames in order to get a crisp reference image for
+registration. We first take ``ops['nimg_init']`` evenly-spaced frames of the
 movie. Then from those frames, we take the top 20 frames that are most
 correlated to each other and take the mean of those frames as our
 initial reference image. Then we refine this reference image iteratively
-by aligning all the random frames to the reference image, and then
+by aligning all the evenly-spaced frames to the reference image, and then
 recomputing the reference image as the mean of the best aligned frames.
 
 The function that performs these steps can be run as follows (where ops
@@ -35,7 +35,7 @@ needs the reg_file, Ly, Lx, and nimg_init parameters):
    refImg = register.pick_initial_reference(ops)
 
 Here is an example reference image on the right, compared to just taking
-the average of a random subset of frames (on the left):
+the average of an evenly-spaced subset of frames (on the left):
 
 .. image:: _static/badrefimg.png
    :width: 600
