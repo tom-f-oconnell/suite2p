@@ -97,7 +97,14 @@ def make_masks_and_enable_buttons(parent):
     if (isinstance(parent.ops['diameter'], (list, np.ndarray)) and
         len(parent.ops['diameter'])>1 and
         parent.ops.get('aspect', 1.0)):
-        parent.xyrat = parent.ops["diameter"][0] / parent.ops["diameter"][1]
+
+        # TODO TODO TODO fix properly  (what is xyrat anyway?)
+        try:
+            parent.xyrat = parent.ops["diameter"][0] / parent.ops["diameter"][1]
+        except ZeroDivisionError:
+            print('FIX HACK IN suite2p/gui/io.py:100')
+            parent.xyrat = parent.ops.get('aspect', 1.0)
+
     else:
         parent.xyrat = parent.ops.get('aspect', 1.0)
 
